@@ -1,47 +1,120 @@
-<!DOCTYPE html><html><head><meta charset='utf-8'><title>Eye Exercise Tracker Pro</title>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eye Exercise V4</title>
 <style>
-body{font-family:Arial;background:#111;color:#fff;text-align:center}
-.card{background:#1e1e1e;margin:10px;padding:15px;border-radius:10px}
-#targetArea{height:350px;display:flex;align-items:center;justify-content:center}
-.dot{background:#fff;border-radius:50%}
-.bullseye{border-radius:50%;background:radial-gradient(circle,black 10%,white 11%,white 25%,black 26%,black 40%,white 41%,white 55%,black 56%)}
-.flame{animation:flicker .2s infinite alternate}
-@keyframes flicker{from{transform:scale(1)}to{transform:scale(1.05)}}
-.pendulum{position:relative;animation:swing 4s infinite ease-in-out}
-@keyframes swing{0%{left:-180px}50%{left:180px}100%{left:-180px}}
-.progress{height:24px;background:#333}.bar{height:24px;width:0;background:linear-gradient(90deg,#00ff88,#ffd700)}
-</style></head><body>
-<h1>👁 Eye Exercise Tracker Pro</h1>
-<div class='card'>
-<select id='targetType' onchange='changeTarget()'>
-<option value='dot'>Large Dot</option>
-<option value='bullseye'>Concentric Circles</option>
-<option value='flame'>Candle Flame</option>
-<option value='pendulum'>Pendulum</option>
+body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial}
+.top{position:sticky;top:0;background:#151515;padding:10px;z-index:100}
+button,select,input{padding:8px;margin:4px}
+.wrap{max-width:900px;margin:auto;padding:10px}
+.cameraFrame{width:100%;height:320px;overflow:hidden;border:2px solid #444;border-radius:12px;background:#000;position:relative}
+video{width:100%;height:100%;object-fit:cover;transform-origin:center center}
+#targetArea{height:260px;display:flex;align-items:center;justify-content:center;background:#000;border-radius:12px;margin-top:10px}
+.big{font-size:72px;font-weight:bold;text-align:center}
+.label{text-align:center;font-size:24px}
+.progress{height:28px;background:#333;border-radius:20px;overflow:hidden}
+.bar{height:100%;width:0%;background:linear-gradient(90deg,#00d26a,#ffd700)}
+.dot{background:white;border-radius:50%}
+.bull{border-radius:50%;background:radial-gradient(circle,black 10%,white 11%,white 25%,black 26%,black 40%,white 41%,white 55%,black 56%)}
+.flame{animation:f .2s infinite alternate}
+@keyframes f{from{transform:scale(1)}to{transform:scale(1.06)}}
+.pend{position:relative;animation:s 4s infinite ease-in-out}
+@keyframes s{0%{left:-160px}50%{left:160px}100%{left:-160px}}
+</style>
+</head>
+<body>
+<div class="top">
+<button onclick="startCamera()">📷 Start Camera</button>
+<button onclick="stopCamera()">⛔ Stop</button>
+<button onclick="startSession()">▶ Start Session</button>
+<select id="duration"><option value="60">1 Min</option><option value="120">2 Min</option><option value="300">5 Min</option></select>
+<select id="target" onchange="renderTarget()">
+<option value="flame">🔥 Flame</option>
+<option value="pend">🪀 Pendulum</option>
+<option value="bull">🎯 Circles</option>
+<option value="dot">⚫ Dot</option>
 </select>
-<input type='range' min='80' max='350' value='200' id='sizeSlider' oninput='changeTarget()'>
 </div>
-<div class='card'>
-<select id='duration'><option value='60'>1 Minute</option><option value='120'>2 Minutes</option><option value='300'>5 Minutes</option></select>
-<button onclick='startTimer()'>Start</button>
-<h2 id='time'>00:00</h2>
-<div class='progress'><div class='bar' id='bar'></div></div>
+
+<div class="wrap">
+<div id="camStatus">Camera Not Started</div>
+<div class="cameraFrame">
+<video id="video" autoplay playsinline muted></video>
 </div>
-<div id='targetArea' class='card'></div>
+
+<div>
+Zoom <input type="range" id="zoom" min="1" max="4" step="0.1" value="1" oninput="applyZoom()">
+Target Size <input type="range" id="size" min="80" max="450" value="220" oninput="renderTarget()">
+</div>
+
+<div id="targetArea"></div>
+
+<div class="label">BLINK COUNT</div>
+<div class="big" id="blinkCount">0</div>
+
+<div class="label">CURRENT STREAK</div>
+<div class="big" id="streak">0.0</div>
+
+<div class="label">BEST STREAK</div>
+<div class="big" id="best">0.0</div>
+
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="big" id="time" style="font-size:48px">00:00</div>
+
+<p style="text-align:center">Press <b>B</b> to simulate a blink.</p>
+</div>
+
 <script>
-function changeTarget(){
-let t=document.getElementById('targetType').value,s=document.getElementById('sizeSlider').value,a=document.getElementById('targetArea');
-if(t==='dot')a.innerHTML='<div class="dot" style="width:'+s+'px;height:'+s+'px"></div>';
-else if(t==='bullseye')a.innerHTML='<div class="bullseye" style="width:'+s+'px;height:'+s+'px"></div>';
-else if(t==='flame')a.innerHTML='<div class="flame" style="font-size:'+s+'px">🔥</div>';
-else a.innerHTML='<div class="pendulum" style="font-size:'+Math.max(80,s/2)+'px">⚫</div>';
+let stream,start,lastBlink,best=0,blink=0,timer;
+
+async function startCamera(){
+try{
+stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+video.srcObject=stream;
+camStatus.innerText="Camera Connected";
+}catch(e){camStatus.innerText="Camera Error: "+e.message;}
 }
-let timer;
-function startTimer(){
-clearInterval(timer);let total=parseInt(document.getElementById('duration').value),start=Date.now();
-timer=setInterval(function(){let sec=Math.floor((Date.now()-start)/1000);
-document.getElementById('time').innerText=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
-document.getElementById('bar').style.width=Math.min(100,(sec/total)*100)+'%';
-if(sec>=total){clearInterval(timer);alert('Exercise Complete');}},200);}
-changeTarget();
-</script></body></html>
+function stopCamera(){
+if(stream) stream.getTracks().forEach(t=>t.stop());
+camStatus.innerText="Camera Stopped";
+}
+function applyZoom(){
+video.style.transform='scale('+zoom.value+')';
+}
+function renderTarget(){
+let t=target.value,s=size.value;
+if(t==='flame') targetArea.innerHTML='<div class="flame" style="font-size:'+s+'px">🔥</div>';
+if(t==='pend') targetArea.innerHTML='<div class="pend" style="font-size:'+Math.max(100,s/2)+'px">⚫</div>';
+if(t==='bull') targetArea.innerHTML='<div class="bull" style="width:'+s+'px;height:'+s+'px"></div>';
+if(t==='dot') targetArea.innerHTML='<div class="dot" style="width:'+s+'px;height:'+s+'px"></div>';
+}
+function startSession(){
+clearInterval(timer);
+let total=parseInt(duration.value);
+start=Date.now();
+lastBlink=start;
+blink=0;
+blinkCount.innerText='0';
+timer=setInterval(()=>{
+let sec=Math.floor((Date.now()-start)/1000);
+time.innerText=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+bar.style.width=Math.min(100,sec/total*100)+'%';
+streak.innerText=((Date.now()-lastBlink)/1000).toFixed(1);
+if(sec>=total){clearInterval(timer);alert('Session Complete');}
+},100);
+}
+document.addEventListener('keydown',e=>{
+if(e.key.toLowerCase()==='b'){
+blink++;
+blinkCount.innerText=blink;
+let st=(Date.now()-lastBlink)/1000;
+if(st>best){best=st;document.getElementById('best').innerText=best.toFixed(1);}
+lastBlink=Date.now();
+}
+});
+renderTarget();
+</script>
+</body>
+</html>
