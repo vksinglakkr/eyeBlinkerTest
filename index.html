@@ -1,90 +1,47 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Eye Exercise Tracker</title>
+<!DOCTYPE html><html><head><meta charset='utf-8'><title>Eye Exercise Tracker Pro</title>
 <style>
-body{font-family:Arial,sans-serif;margin:20px;background:#f4f4f4}
-.card{max-width:900px;margin:auto;background:white;padding:20px;border-radius:12px}
-video{width:100%;max-width:500px;border:1px solid #ccc;border-radius:8px}
-.progress{width:100%;height:24px;background:#ddd;border-radius:12px;overflow:hidden}
-.bar{height:100%;width:0%;background:linear-gradient(90deg,green,gold)}
-.dot{width:18px;height:18px;background:#000;border-radius:50%;margin:15px auto}
-.stat{margin:6px 0}
-button,select{padding:8px;margin:5px}
-</style>
-</head>
-<body>
-<div class="card">
-<h2>Eye Exercise Tracker (Prototype)</h2>
-<p>This version starts the front camera and provides the exercise workflow. Automatic blink detection can be added in a later version using MediaPipe.</p>
-
-<select id="mode">
-<option>Observation Test</option>
-<option>No-Blink Challenge</option>
+body{font-family:Arial;background:#111;color:#fff;text-align:center}
+.card{background:#1e1e1e;margin:10px;padding:15px;border-radius:10px}
+#targetArea{height:350px;display:flex;align-items:center;justify-content:center}
+.dot{background:#fff;border-radius:50%}
+.bullseye{border-radius:50%;background:radial-gradient(circle,black 10%,white 11%,white 25%,black 26%,black 40%,white 41%,white 55%,black 56%)}
+.flame{animation:flicker .2s infinite alternate}
+@keyframes flicker{from{transform:scale(1)}to{transform:scale(1.05)}}
+.pendulum{position:relative;animation:swing 4s infinite ease-in-out}
+@keyframes swing{0%{left:-180px}50%{left:180px}100%{left:-180px}}
+.progress{height:24px;background:#333}.bar{height:24px;width:0;background:linear-gradient(90deg,#00ff88,#ffd700)}
+</style></head><body>
+<h1>👁 Eye Exercise Tracker Pro</h1>
+<div class='card'>
+<select id='targetType' onchange='changeTarget()'>
+<option value='dot'>Large Dot</option>
+<option value='bullseye'>Concentric Circles</option>
+<option value='flame'>Candle Flame</option>
+<option value='pendulum'>Pendulum</option>
 </select>
-
-<select id="duration">
-<option value="60">1 Minute</option>
-<option value="120">2 Minutes</option>
-<option value="300">5 Minutes</option>
-</select>
-
-<button onclick="startCam()">Start Camera</button>
-<button onclick="startTest()">Start Test</button>
-
-<div class="dot"></div>
-
-<video id="video" autoplay playsinline muted></video>
-
-<h3 id="timer">00:00</h3>
-
-<div class="progress"><div class="bar" id="bar"></div></div>
-
-<div class="stat">Status: <span id="status">Idle</span></div>
-<div class="stat">Elapsed: <span id="elapsed">0</span> sec</div>
-
-<script>
-let startTime=null;
-let timerHandle=null;
-
-async function startCam(){
- try{
-  const stream=await navigator.mediaDevices.getUserMedia({
-   video:{facingMode:"user"},audio:false
-  });
-  document.getElementById("video").srcObject=stream;
-  document.getElementById("status").innerText="Camera Connected";
- }catch(e){
-  document.getElementById("status").innerText="Camera Permission Denied";
- }
-}
-
-function startTest(){
- let duration=parseInt(document.getElementById("duration").value);
- startTime=Date.now();
- document.getElementById("status").innerText="Running";
- clearInterval(timerHandle);
-
- timerHandle=setInterval(()=>{
-   let sec=Math.floor((Date.now()-startTime)/1000);
-   document.getElementById("elapsed").innerText=sec;
-
-   let m=String(Math.floor(sec/60)).padStart(2,"0");
-   let s=String(sec%60).padStart(2,"0");
-   document.getElementById("timer").innerText=m+":"+s;
-
-   let pct=Math.min(100,(sec/duration)*100);
-   document.getElementById("bar").style.width=pct+"%";
-
-   if(sec>=duration){
-      clearInterval(timerHandle);
-      document.getElementById("status").innerText="Completed";
-   }
- },200);
-}
-</script>
+<input type='range' min='80' max='350' value='200' id='sizeSlider' oninput='changeTarget()'>
 </div>
-</body>
-</html>
+<div class='card'>
+<select id='duration'><option value='60'>1 Minute</option><option value='120'>2 Minutes</option><option value='300'>5 Minutes</option></select>
+<button onclick='startTimer()'>Start</button>
+<h2 id='time'>00:00</h2>
+<div class='progress'><div class='bar' id='bar'></div></div>
+</div>
+<div id='targetArea' class='card'></div>
+<script>
+function changeTarget(){
+let t=document.getElementById('targetType').value,s=document.getElementById('sizeSlider').value,a=document.getElementById('targetArea');
+if(t==='dot')a.innerHTML='<div class="dot" style="width:'+s+'px;height:'+s+'px"></div>';
+else if(t==='bullseye')a.innerHTML='<div class="bullseye" style="width:'+s+'px;height:'+s+'px"></div>';
+else if(t==='flame')a.innerHTML='<div class="flame" style="font-size:'+s+'px">🔥</div>';
+else a.innerHTML='<div class="pendulum" style="font-size:'+Math.max(80,s/2)+'px">⚫</div>';
+}
+let timer;
+function startTimer(){
+clearInterval(timer);let total=parseInt(document.getElementById('duration').value),start=Date.now();
+timer=setInterval(function(){let sec=Math.floor((Date.now()-start)/1000);
+document.getElementById('time').innerText=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+document.getElementById('bar').style.width=Math.min(100,(sec/total)*100)+'%';
+if(sec>=total){clearInterval(timer);alert('Exercise Complete');}},200);}
+changeTarget();
+</script></body></html>
