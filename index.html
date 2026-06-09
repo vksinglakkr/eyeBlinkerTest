@@ -1,0 +1,442 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#app{max-width:900px;margin:0 auto;padding:1rem;font-family:var(--font-sans)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:1rem;padding:12px;background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)}
+.toolbar button{font-size:13px;padding:7px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;display:flex;align-items:center;gap:6px}
+.toolbar button:hover{background:var(--color-background-secondary)}
+.toolbar button.active{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+.toolbar select{font-size:13px;padding:7px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary)}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:600px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.panel-head{padding:10px 14px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;font-weight:500;color:var(--color-text-secondary);display:flex;align-items:center;gap:8px}
+.cam-wrap{position:relative;height:240px;background:#000;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center}
+#overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.status-badge{position:absolute;bottom:8px;left:8px;font-size:11px;padding:3px 8px;border-radius:var(--border-radius-md);font-weight:500}
+.badge-ok{background:rgba(29,158,117,0.85);color:#fff}
+.badge-warn{background:rgba(186,117,23,0.85);color:#fff}
+.badge-off{background:rgba(0,0,0,0.6);color:#aaa}
+.session-over{position:absolute;inset:0;background:rgba(0,0,0,0.82);display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:15px;font-weight:500;text-align:center}
+.session-over i{font-size:40px;color:rgba(29,158,117,1)}
+.target-wrap{height:240px;background:#0b0b0b;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.target-over{position:absolute;inset:0;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:14px;gap:6px}
+.target-over i{font-size:36px;color:rgba(29,158,117,0.9)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.metric{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;text-align:center}
+.metric-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.metric-val{font-size:28px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.metric-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.prog-wrap{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px;margin-bottom:12px}
+.prog-bar-bg{height:8px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+.prog-bar-fill{height:100%;width:0%;background:var(--color-background-success);border-radius:4px;transition:width .5s linear}
+.prog-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-top:6px}
+.alert-box{display:none;padding:10px 14px;border-radius:var(--border-radius-md);font-size:13px;margin-bottom:12px;font-weight:500;align-items:center;gap:8px}
+.alert-slow{background:var(--color-background-warning);color:var(--color-text-warning)}
+.alert-fast{background:var(--color-background-danger);color:var(--color-text-danger)}
+.history{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px}
+.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.history-title{font-size:13px;font-weight:500;color:var(--color-text-secondary)}
+.history-clear{font-size:12px;color:var(--color-text-secondary);background:none;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:4px 10px;cursor:pointer}
+#histChart{width:100%;height:120px}
+.session-list{max-height:130px;overflow-y:auto;margin-top:8px}
+.session-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;font-size:12px;padding:5px 4px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)}
+.session-row.head{font-weight:500;color:var(--color-text-primary);position:sticky;top:0;background:var(--color-background-primary)}
+.zoom-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary)}
+.zoom-row label{font-size:12px;color:var(--color-text-secondary);white-space:nowrap}
+.zoom-row input{flex:1}
+.ear-row{display:flex;gap:8px;padding:8px 14px;border-top:0.5px solid var(--color-border-tertiary)}
+.ear-bar-wrap{flex:1}
+.ear-bar-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
+.ear-bar-bg{height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden}
+.ear-bar-fill{height:100%;width:50%;border-radius:3px}
+.ear-l{background:var(--color-background-info)}
+.ear-r{background:var(--color-background-success)}
+.manual-btn{width:100%;padding:14px;font-size:15px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px}
+.manual-btn:active{transform:scale(0.98)}
+.blink-flash{position:absolute;inset:0;background:rgba(29,158,117,0.25);pointer-events:none;opacity:0;transition:opacity .15s}
+</style>
+
+<h2 class="sr-only">Eye Blink Tester – AI-powered blink detection</h2>
+<div id="app">
+
+  <div class="toolbar">
+    <button id="btnCamera" onclick="initCamera()"><i class="ti ti-camera" aria-hidden="true"></i> Start Camera</button>
+    <button id="btnSession" onclick="toggleSession()"><i class="ti ti-player-play" aria-hidden="true"></i> Start</button>
+    <button onclick="resetAll()" title="Reset everything and start fresh"><i class="ti ti-refresh" aria-hidden="true"></i> Reset</button>
+    <select id="duration">
+      <option value="60">1 min</option>
+      <option value="120">2 min</option>
+      <option value="300">5 min</option>
+      <option value="600">10 min</option>
+    </select>
+    <select id="targetSel" onchange="renderTarget()">
+      <option value="flame">Flame</option>
+      <option value="dot">Dot</option>
+      <option value="bull">Bullseye</option>
+      <option value="pend">Pendulum</option>
+    </select>
+  </div>
+
+  <div id="alertBox" class="alert-box">
+    <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+    <span id="alertMsg"></span>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panel-head"><i class="ti ti-video" aria-hidden="true"></i> Live Camera</div>
+      <div class="cam-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="blink-flash" id="blinkFlash"></div>
+        <span id="statusBadge" class="status-badge badge-off">Camera off</span>
+        <div class="session-over" id="camOver">
+          <i class="ti ti-circle-check" aria-hidden="true"></i>
+          <span>Session complete</span>
+          <span id="camOverSummary" style="font-size:13px;opacity:0.7"></span>
+        </div>
+      </div>
+      <div class="ear-row">
+        <div class="ear-bar-wrap">
+          <div class="ear-bar-label">Left eye openness</div>
+          <div class="ear-bar-bg"><div class="ear-bar-fill ear-l" id="earL" style="width:50%"></div></div>
+        </div>
+        <div class="ear-bar-wrap">
+          <div class="ear-bar-label">Right eye openness</div>
+          <div class="ear-bar-bg"><div class="ear-bar-fill ear-r" id="earR" style="width:50%"></div></div>
+        </div>
+      </div>
+      <div class="zoom-row">
+        <label>Zoom</label>
+        <input type="range" id="zoom" min="1" max="3" step="0.1" value="1">
+        <span id="zoomVal" style="font-size:12px;color:var(--color-text-secondary);min-width:28px">1.0×</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><i class="ti ti-focus-2" aria-hidden="true"></i> Focus Target — stare without blinking</div>
+      <div class="target-wrap" id="targetArea">
+        <div class="target-over" id="targetOver">
+          <i class="ti ti-circle-check" aria-hidden="true"></i>
+          <span style="font-weight:500">Session complete!</span>
+          <span style="font-size:12px;opacity:0.7">Press Reset to start again</span>
+        </div>
+      </div>
+      <div style="padding:10px 14px">
+        <button class="manual-btn" onclick="registerBlink(false)">
+          <i class="ti ti-hand-click" aria-hidden="true"></i> Manual Blink &nbsp;·&nbsp; or press <kbd style="font-size:11px;padding:1px 5px;border-radius:3px;border:0.5px solid var(--color-border-secondary)">B</kbd>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Blinks</div><div class="metric-val" id="mBlinks">0</div><div class="metric-sub">total</div></div>
+    <div class="metric"><div class="metric-label">Current streak</div><div class="metric-val" id="mStreak">—</div><div class="metric-sub">sec without blink</div></div>
+    <div class="metric"><div class="metric-label">Best streak</div><div class="metric-val" id="mBest">—</div><div class="metric-sub">sec</div></div>
+    <div class="metric"><div class="metric-label">Rate</div><div class="metric-val" id="mRate">—</div><div class="metric-sub">blinks / min</div></div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-bar-bg"><div class="prog-bar-fill" id="progBar"></div></div>
+    <div class="prog-labels"><span id="progTime">00:00</span><span id="progTotal">—</span></div>
+  </div>
+
+  <div class="history">
+    <div class="history-head">
+      <span class="history-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> Session history</span>
+      <button class="history-clear" onclick="clearHistory()">Clear</button>
+    </div>
+    <canvas id="histChart"></canvas>
+    <div class="session-list">
+      <div class="session-row head"><span>Time</span><span>Duration</span><span>Blinks</span><span>Rate/min</span></div>
+      <div id="sessionRows"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const video=document.getElementById('video');
+const overlay=document.getElementById('overlay');
+const ctx2d=overlay.getContext('2d');
+
+let blinks=0,best=0,lastBlink=null,sessionStart=null,sessionRunning=false;
+let sessionTimer=null,fmCamera=null,faceMesh=null,cameraActive=false;
+let blinkCooldown=false,prevEarAvg=1,sessionLog=[];
+let earLsmooth=0.5,earRsmooth=0.5;
+
+const EAR_THRESH=0.22;
+const LEFT_EYE=[362,385,387,263,373,380];
+const RIGHT_EYE=[33,160,158,133,153,144];
+
+function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)}
+function earFromPoints(pts,idxs){
+  const p=idxs.map(i=>pts[i]);
+  return (dist(p[1],p[5])+dist(p[2],p[4]))/(2*dist(p[0],p[3]));
+}
+
+function initFaceMesh(){
+  faceMesh=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+  faceMesh.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:0.6,minTrackingConfidence:0.6});
+  faceMesh.onResults(onResults);
+}
+
+function onResults(res){
+  const w=video.videoWidth||640, h=video.videoHeight||480;
+  overlay.width=w; overlay.height=h;
+  ctx2d.clearRect(0,0,w,h);
+  if(!res.multiFaceLandmarks||!res.multiFaceLandmarks.length) return;
+  const lm=res.multiFaceLandmarks[0];
+  const pts=lm.map(p=>({x:p.x*w,y:p.y*h}));
+
+  const earL=earFromPoints(pts,LEFT_EYE);
+  const earR=earFromPoints(pts,RIGHT_EYE);
+  const earAvg=(earL+earR)/2;
+
+  earLsmooth=earLsmooth*0.7+earL*0.3;
+  earRsmooth=earRsmooth*0.7+earR*0.3;
+  document.getElementById('earL').style.width=Math.min(100,Math.max(0,earLsmooth*280))+'%';
+  document.getElementById('earR').style.width=Math.min(100,Math.max(0,earRsmooth*280))+'%';
+
+  drawEyeOutline(ctx2d,pts,LEFT_EYE,'rgba(29,158,117,0.85)');
+  drawEyeOutline(ctx2d,pts,RIGHT_EYE,'rgba(56,138,221,0.85)');
+
+  if(sessionRunning && earAvg<EAR_THRESH && prevEarAvg>=EAR_THRESH && !blinkCooldown){
+    registerBlink(true);
+    blinkCooldown=true;
+    setTimeout(()=>blinkCooldown=false,350);
+  }
+  prevEarAvg=earAvg;
+}
+
+function drawEyeOutline(c,pts,idxs,color){
+  c.beginPath();
+  idxs.forEach((i,k)=>{ const p=pts[i]; k===0?c.moveTo(p.x,p.y):c.lineTo(p.x,p.y); });
+  c.closePath();
+  c.strokeStyle=color;
+  c.lineWidth=2;
+  c.stroke();
+  c.fillStyle=color.replace('0.85','0.12');
+  c.fill();
+}
+
+async function initCamera(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});
+    video.srcObject=stream;
+    await new Promise(r=>video.onloadedmetadata=r);
+    cameraActive=true;
+    setBadge('on');
+    document.getElementById('btnCamera').classList.add('active');
+    document.getElementById('btnCamera').innerHTML='<i class="ti ti-camera" aria-hidden="true"></i> Camera on';
+    initFaceMesh();
+    fmCamera=new Camera(video,{
+      onFrame:async()=>{ if(faceMesh) await faceMesh.send({image:video}); },
+      width:640,height:480
+    });
+    fmCamera.start();
+  }catch(e){
+    setBadge('warn');
+    alert('Camera error: '+e.message);
+  }
+}
+
+function setBadge(state){
+  const b=document.getElementById('statusBadge');
+  if(state==='on'){b.className='status-badge badge-ok';b.textContent='Camera on';}
+  else if(state==='warn'){b.className='status-badge badge-warn';b.textContent='Camera blocked';}
+  else{b.className='status-badge badge-off';b.textContent='Camera off';}
+}
+
+function toggleSession(){
+  if(sessionRunning) stopSession(true);
+  else startSession();
+}
+
+function startSession(){
+  blinks=0; best=0; lastBlink=Date.now(); sessionStart=Date.now();
+  sessionRunning=true;
+  document.getElementById('mBlinks').textContent='0';
+  document.getElementById('mStreak').textContent='0.0';
+  document.getElementById('mBest').textContent='—';
+  document.getElementById('mRate').textContent='—';
+  document.getElementById('camOver').style.display='none';
+  document.getElementById('targetOver').style.display='none';
+  document.getElementById('btnSession').innerHTML='<i class="ti ti-player-stop" aria-hidden="true"></i> Stop';
+  document.getElementById('btnSession').classList.add('active');
+  document.getElementById('alertBox').style.display='none';
+  const total=parseInt(document.getElementById('duration').value);
+  document.getElementById('progTotal').textContent=fmtTime(total);
+  document.getElementById('progBar').style.width='0%';
+
+  sessionTimer=setInterval(()=>{
+    const sec=Math.floor((Date.now()-sessionStart)/1000);
+    document.getElementById('progTime').textContent=fmtTime(sec);
+    document.getElementById('progBar').style.width=Math.min(100,sec/total*100)+'%';
+    if(sessionRunning){
+      const streak=((Date.now()-lastBlink)/1000).toFixed(1);
+      document.getElementById('mStreak').textContent=streak;
+      checkAlerts(parseFloat(streak),blinks,sec);
+    }
+    if(sec>=total) stopSession(false);
+  },500);
+}
+
+function stopSession(manual){
+  if(!sessionRunning) return;
+  sessionRunning=false;
+  clearInterval(sessionTimer);
+  document.getElementById('btnSession').innerHTML='<i class="ti ti-player-play" aria-hidden="true"></i> Start';
+  document.getElementById('btnSession').classList.remove('active');
+  document.getElementById('alertBox').style.display='none';
+
+  const duration=Math.max(1,Math.floor((Date.now()-sessionStart)/1000));
+  const rate=(blinks/(duration/60)).toFixed(1);
+
+  document.getElementById('camOver').style.display='flex';
+  document.getElementById('camOverSummary').textContent=blinks+' blinks · '+rate+'/min';
+  document.getElementById('targetOver').style.display='flex';
+
+  const now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  sessionLog.push({time:now,duration:fmtTime(duration),blinks,rate});
+  updateSessionList();
+  updateHistChart();
+  playTone(523,0.25);
+}
+
+function resetAll(){
+  if(sessionRunning) stopSession(true);
+  blinks=0; best=0; lastBlink=null; sessionStart=null;
+  document.getElementById('mBlinks').textContent='0';
+  document.getElementById('mStreak').textContent='—';
+  document.getElementById('mBest').textContent='—';
+  document.getElementById('mRate').textContent='—';
+  document.getElementById('progBar').style.width='0%';
+  document.getElementById('progTime').textContent='00:00';
+  document.getElementById('progTotal').textContent='—';
+  document.getElementById('camOver').style.display='none';
+  document.getElementById('targetOver').style.display='none';
+  document.getElementById('alertBox').style.display='none';
+  document.getElementById('btnSession').innerHTML='<i class="ti ti-player-play" aria-hidden="true"></i> Start';
+  document.getElementById('btnSession').classList.remove('active');
+}
+
+function registerBlink(auto){
+  if(!sessionRunning) return;
+  const now=Date.now();
+  if(lastBlink){
+    const gap=parseFloat(((now-lastBlink)/1000).toFixed(1));
+    if(gap>best){ best=gap; document.getElementById('mBest').textContent=best.toFixed(1); }
+  }
+  lastBlink=now;
+  blinks++;
+  document.getElementById('mBlinks').textContent=blinks;
+  document.getElementById('mStreak').textContent='0.0';
+  const sec=Math.max(1,Math.floor((now-sessionStart)/1000));
+  document.getElementById('mRate').textContent=(blinks/(sec/60)).toFixed(1);
+  if(!auto) flashBlink();
+  playTone(880,0.04);
+}
+
+function flashBlink(){
+  const f=document.getElementById('blinkFlash');
+  f.style.opacity='1';
+  setTimeout(()=>f.style.opacity='0',150);
+}
+
+function checkAlerts(streak,blinks,sec){
+  const box=document.getElementById('alertBox');
+  const msg=document.getElementById('alertMsg');
+  const rate=sec>5?blinks/(sec/60):null;
+  if(streak>8){
+    box.className='alert-box alert-slow';
+    msg.textContent='No blink for '+streak+'s — eyes may be drying out. Blink now!';
+    box.style.display='flex';
+  } else if(rate!==null && rate>30){
+    box.className='alert-box alert-fast';
+    msg.textContent='Blink rate is high ('+parseFloat(rate).toFixed(1)+'/min). Try to slow down.';
+    box.style.display='flex';
+  } else {
+    box.style.display='none';
+  }
+}
+
+function fmtTime(sec){
+  return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+}
+
+function playTone(freq,dur){
+  try{
+    const ac=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.connect(g);g.connect(ac.destination);
+    o.type='sine';o.frequency.value=freq;
+    g.gain.setValueAtTime(0.12,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    o.start();o.stop(ac.currentTime+dur);
+  }catch(e){}
+}
+
+document.getElementById('zoom').addEventListener('input',function(){
+  video.style.transform='scale('+this.value+')';
+  document.getElementById('zoomVal').textContent=parseFloat(this.value).toFixed(1)+'×';
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key.toLowerCase()==='b'){e.preventDefault();registerBlink(false);}
+  if(e.key===' '){e.preventDefault();toggleSession();}
+  if(e.key==='r'||e.key==='R'){resetAll();}
+});
+
+let histChartInst=null;
+function updateHistChart(){
+  const canvas=document.getElementById('histChart');
+  if(histChartInst){histChartInst.destroy();histChartInst=null;}
+  if(!sessionLog.length) return;
+  histChartInst=new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:sessionLog.map(s=>s.time),
+      datasets:[{label:'Blinks/min',data:sessionLog.map(s=>parseFloat(s.rate)),backgroundColor:'rgba(29,158,117,0.55)',borderColor:'rgba(29,158,117,1)',borderWidth:1,borderRadius:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:11}},grid:{color:'rgba(128,128,128,0.08)'}},x:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+}
+
+function updateSessionList(){
+  document.getElementById('sessionRows').innerHTML=sessionLog.slice().reverse().map(s=>
+    `<div class="session-row"><span>${s.time}</span><span>${s.duration}</span><span>${s.blinks}</span><span>${s.rate}</span></div>`
+  ).join('');
+}
+
+function clearHistory(){
+  sessionLog=[];
+  document.getElementById('sessionRows').innerHTML='';
+  if(histChartInst){histChartInst.destroy();histChartInst=null;}
+}
+
+function renderTarget(){
+  const area=document.getElementById('targetArea');
+  const over=document.getElementById('targetOver');
+  const t=document.getElementById('targetSel').value;
+  area.innerHTML='';
+  area.appendChild(over);
+  let el=document.createElement('div');
+  if(t==='flame'){el.style.cssText='font-size:200px;animation:flm .25s infinite alternate;user-select:none';el.textContent='🔥';}
+  else if(t==='dot'){el.style.cssText='width:160px;height:160px;border-radius:50%;background:#fff';}
+  else if(t==='bull'){el.style.cssText='width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,#000 10%,#fff 11%,#fff 28%,#000 29%,#000 46%,#fff 47%,#fff 64%,#000 65%)';}
+  else if(t==='pend'){el.style.cssText='font-size:80px;position:relative;animation:pnd 3s ease-in-out infinite;user-select:none';el.textContent='⚫';}
+  area.insertBefore(el,over);
+}
+
+const sty=document.createElement('style');
+sty.textContent='@keyframes flm{from{transform:scale(1)}to{transform:scale(1.06)}}@keyframes pnd{0%{left:-150px}50%{left:150px}100%{left:-150px}}';
+document.head.appendChild(sty);
+
+renderTarget();
+</script>
