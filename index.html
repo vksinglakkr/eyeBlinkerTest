@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EyeExerciseTracker Pro V3</title>
+<style>
+body{margin:0;font-family:Segoe UI,Arial;background:#0f1115;color:#fff}
+header{padding:12px;text-align:center;font-size:30px;font-weight:bold;background:#181c24}
+.wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;padding:12px}
+.panel{background:#1b2029;border-radius:12px;padding:12px}
+video{width:100%;border-radius:10px;background:#000;transform-origin:center}
+.big{font-size:56px;font-weight:bold;text-align:center}
+.stat{font-size:22px;margin:8px 0}
+.progress{height:28px;background:#333;border-radius:20px;overflow:hidden}
+.bar{height:100%;width:0;background:linear-gradient(90deg,#00d26a,#ffd700)}
+#targetArea{height:420px;display:flex;align-items:center;justify-content:center;background:#000;border-radius:10px}
+.dot{border-radius:50%;background:#fff}
+.bull{border-radius:50%;background:radial-gradient(circle,black 10%,white 11%,white 25%,black 26%,black 40%,white 41%,white 55%,black 56%)}
+.flame{animation:f .2s infinite alternate}
+@keyframes f{from{transform:scale(1)}to{transform:scale(1.06)}}
+.pend{position:relative;animation:s 4s infinite ease-in-out}
+@keyframes s{0%{left:-180px}50%{left:180px}100%{left:-180px}}
+button,select,input{padding:8px;margin:4px}
+</style>
+</head>
+<body>
+<header>👁 EyeExerciseTracker Pro V3</header>
+
+<div class="wrap">
+<div class="panel">
+<h2>Camera</h2>
+<button onclick="startCamera()">Start Camera</button>
+<button onclick="stopCamera()">Stop Camera</button><br>
+Zoom <input type="range" id="zoom" min="1" max="5" step="0.1" value="1" oninput="applyZoom()">
+<label><input type="checkbox" id="mirror" checked onchange="applyZoom()"> Mirror</label>
+<video id="video" autoplay playsinline muted></video>
+<div id="camStatus">Camera: Not Started</div>
+</div>
+
+<div class="panel">
+<h2>Exercise Target</h2>
+<select id="target" onchange="renderTarget()">
+<option value="dot">Large Dot</option>
+<option value="bull">Concentric Circles</option>
+<option value="flame">Candle Flame</option>
+<option value="pend">Pendulum</option>
+</select>
+Size <input type="range" id="size" min="80" max="400" value="220" oninput="renderTarget()">
+<div id="targetArea"></div>
+</div>
+
+<div class="panel">
+<h2>Session</h2>
+Duration
+<select id="duration">
+<option value="60">1 Minute</option>
+<option value="120">2 Minutes</option>
+<option value="300">5 Minutes</option>
+</select>
+<button onclick="startSession()">Start Session</button>
+<div class="big" id="time">00:00</div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+</div>
+
+<div class="panel">
+<h2>Live Statistics</h2>
+<div class="big" id="blinkCount">0</div>
+<div style="text-align:center">Blink Count</div>
+<div class="stat">Current Streak: <span id="streak">0</span> sec</div>
+<div class="stat">Best Streak: <span id="best">0</span> sec</div>
+<div class="stat">Blinks/Minute: <span id="bpm">0</span></div>
+<p>Prototype note: press the <b>B</b> key to simulate a blink. Replace with MediaPipe integration later.</p>
+</div>
+</div>
+
+<script>
+let stream=null,start=0,timer=null,blinkCount=0,lastBlink=0,best=0;
+
+async function startCamera(){
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+  video.srcObject=stream;
+  camStatus.innerText='Camera Connected';
+ }catch(e){ camStatus.innerText='Camera Error: '+e.message; }
+}
+function stopCamera(){
+ if(stream){stream.getTracks().forEach(t=>t.stop());}
+ camStatus.innerText='Camera Stopped';
+}
+function applyZoom(){
+ let z=zoom.value;
+ let m=mirror.checked?-1:1;
+ video.style.transform='scale('+z+') scaleX('+m+')';
+}
+function renderTarget(){
+ let t=target.value,s=size.value;
+ if(t==='dot') targetArea.innerHTML='<div class="dot" style="width:'+s+'px;height:'+s+'px"></div>';
+ if(t==='bull') targetArea.innerHTML='<div class="bull" style="width:'+s+'px;height:'+s+'px"></div>';
+ if(t==='flame') targetArea.innerHTML='<div class="flame" style="font-size:'+s+'px">🔥</div>';
+ if(t==='pend') targetArea.innerHTML='<div class="pend" style="font-size:'+Math.max(100,s/2)+'px">⚫</div>';
+}
+function startSession(){
+ clearInterval(timer);
+ let total=parseInt(duration.value);
+ start=Date.now();
+ lastBlink=start;
+ blinkCount=0;
+ blinkCountEl();
+ timer=setInterval(()=>{
+   let sec=Math.floor((Date.now()-start)/1000);
+   time.innerText=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+   bar.style.width=Math.min(100,sec/total*100)+'%';
+   streak.innerText=((Date.now()-lastBlink)/1000).toFixed(1);
+   bpm.innerText=sec>0?(blinkCount/(sec/60)).toFixed(1):0;
+   if(sec>=total){clearInterval(timer);alert('Session Complete');}
+ },100);
+}
+function blinkCountEl(){document.getElementById('blinkCount').innerText=blinkCount;}
+document.addEventListener('keydown',e=>{
+ if(e.key.toLowerCase()==='b'){
+   blinkCount++;
+   let st=(Date.now()-lastBlink)/1000;
+   if(st>best){best=st;document.getElementById('best').innerText=best.toFixed(1);}
+   lastBlink=Date.now();
+   blinkCountEl();
+ }
+});
+renderTarget();
+</script>
+</body>
+</html>
