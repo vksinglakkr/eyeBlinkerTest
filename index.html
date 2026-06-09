@@ -1,0 +1,412 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--color-background-tertiary)}
+#app{max-width:900px;margin:0 auto;padding:1rem;font-family:var(--font-sans)}
+h2.title{font-size:18px;font-weight:500;color:var(--color-text-primary);margin-bottom:1rem}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:1rem;padding:12px;background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)}
+.toolbar button{font-size:13px;padding:7px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;display:flex;align-items:center;gap:6px}
+.toolbar button:hover{background:var(--color-background-secondary)}
+.toolbar button.active{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+.toolbar select{font-size:13px;padding:7px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary)}
+.toolbar label{font-size:13px;color:var(--color-text-secondary);display:flex;align-items:center;gap:6px;cursor:pointer}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:600px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.panel-head{padding:10px 14px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;font-weight:500;color:var(--color-text-secondary);display:flex;align-items:center;gap:8px}
+.cam-wrap{position:relative;height:240px;background:#000;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+#overlay{position:absolute;top:0;left:0;width:100%;height:100%}
+.status-badge{position:absolute;bottom:8px;left:8px;font-size:11px;padding:3px 8px;border-radius:var(--border-radius-md);font-weight:500}
+.badge-ok{background:rgba(29,158,117,0.85);color:#fff}
+.badge-warn{background:rgba(186,117,23,0.85);color:#fff}
+.badge-off{background:rgba(0,0,0,0.6);color:#aaa}
+.target-wrap{height:240px;background:#0b0b0b;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.metric{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;text-align:center}
+.metric-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.metric-val{font-size:28px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.metric-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.prog-wrap{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px;margin-bottom:12px}
+.prog-bar-bg{height:8px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+.prog-bar-fill{height:100%;width:0%;background:var(--color-background-success);border-radius:4px;transition:width .3s}
+.prog-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-top:6px}
+.alert-box{display:none;padding:10px 14px;border-radius:var(--border-radius-md);font-size:13px;margin-bottom:12px;font-weight:500}
+.alert-slow{background:var(--color-background-warning);color:var(--color-text-warning);display:flex;align-items:center;gap:8px}
+.alert-fast{background:var(--color-background-danger);color:var(--color-text-danger);display:flex;align-items:center;gap:8px}
+.history{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px}
+.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.history-title{font-size:13px;font-weight:500;color:var(--color-text-secondary)}
+.history-clear{font-size:12px;color:var(--color-text-secondary);background:none;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:4px 10px;cursor:pointer}
+#histChart{width:100%;height:120px}
+.session-list{max-height:130px;overflow-y:auto;margin-top:8px}
+.session-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;font-size:12px;padding:5px 4px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)}
+.session-row.head{font-weight:500;color:var(--color-text-primary);position:sticky;top:0;background:var(--color-background-primary)}
+.zoom-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:0.5px solid var(--color-border-tertiary)}
+.zoom-row label{font-size:12px;color:var(--color-text-secondary);white-space:nowrap}
+.zoom-row input{flex:1}
+.ear-row{display:flex;gap:8px;padding:8px 14px;border-top:0.5px solid var(--color-border-tertiary)}
+.ear-bar-wrap{flex:1}
+.ear-bar-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
+.ear-bar-bg{height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden}
+.ear-bar-fill{height:100%;width:50%;border-radius:3px;transition:width .1s}
+.ear-l{background:var(--color-background-info)}
+.ear-r{background:var(--color-background-success)}
+.manual-btn{width:100%;padding:14px;font-size:15px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px}
+.manual-btn:active{transform:scale(0.98);background:var(--color-background-info)}
+</style>
+
+<h2 class="sr-only">Eye Blink Tester – AI-powered blink detection with webcam</h2>
+<div id="app">
+  <h2 class="title"><i class="ti ti-eye" aria-hidden="true"></i> Eye Blink Tester</h2>
+
+  <div class="toolbar">
+    <button id="btnCamera" onclick="initCamera()"><i class="ti ti-camera" aria-hidden="true"></i> Start Camera</button>
+    <button id="btnSession" onclick="toggleSession()"><i class="ti ti-player-play" aria-hidden="true"></i> Start Session</button>
+    <select id="duration">
+      <option value="60">1 min</option>
+      <option value="120">2 min</option>
+      <option value="300">5 min</option>
+      <option value="600">10 min</option>
+    </select>
+    <select id="targetSel" onchange="renderTarget()">
+      <option value="flame">Flame</option>
+      <option value="dot">Dot</option>
+      <option value="bull">Bullseye</option>
+      <option value="pend">Pendulum</option>
+    </select>
+    <label><input type="checkbox" id="showCam" checked onchange="toggleCam()"> Camera</label>
+    <label><input type="checkbox" id="showMesh" checked> Mesh</label>
+  </div>
+
+  <div id="alertBox" class="alert-box">
+    <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+    <span id="alertMsg"></span>
+  </div>
+
+  <div class="layout">
+    <div class="panel" id="camPanel">
+      <div class="panel-head"><i class="ti ti-video" aria-hidden="true"></i> Live Feed + Face Mesh</div>
+      <div class="cam-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <span id="statusBadge" class="status-badge badge-off">Camera off</span>
+      </div>
+      <div class="ear-row">
+        <div class="ear-bar-wrap">
+          <div class="ear-bar-label">Left EAR</div>
+          <div class="ear-bar-bg"><div class="ear-bar-fill ear-l" id="earL"></div></div>
+        </div>
+        <div class="ear-bar-wrap">
+          <div class="ear-bar-label">Right EAR</div>
+          <div class="ear-bar-bg"><div class="ear-bar-fill ear-r" id="earR"></div></div>
+        </div>
+      </div>
+      <div class="zoom-row">
+        <label>Zoom</label>
+        <input type="range" id="zoom" min="1" max="3" step="0.1" value="1" oninput="video.style.transform='scale('+this.value+')'">
+        <span id="zoomVal" style="font-size:12px;color:var(--color-text-secondary);min-width:28px">1.0×</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><i class="ti ti-focus-2" aria-hidden="true"></i> Focus Target</div>
+      <div class="target-wrap" id="targetArea"></div>
+      <div style="padding:10px 14px">
+        <button class="manual-btn" onclick="registerBlink()" id="manualBtn">
+          <i class="ti ti-hand-click" aria-hidden="true"></i> Manual Blink (tap or press B)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Blinks</div><div class="metric-val" id="mBlinks">0</div><div class="metric-sub">total</div></div>
+    <div class="metric"><div class="metric-label">Streak</div><div class="metric-val" id="mStreak">0.0</div><div class="metric-sub">sec no blink</div></div>
+    <div class="metric"><div class="metric-label">Best streak</div><div class="metric-val" id="mBest">0.0</div><div class="metric-sub">sec</div></div>
+    <div class="metric"><div class="metric-label">Rate</div><div class="metric-val" id="mRate">—</div><div class="metric-sub">blinks/min</div></div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-bar-bg"><div class="prog-bar-fill" id="progBar"></div></div>
+    <div class="prog-labels"><span id="progTime">00:00</span><span id="progTotal">—</span></div>
+  </div>
+
+  <div class="history">
+    <div class="history-head">
+      <span class="history-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> Session History</span>
+      <button class="history-clear" onclick="clearHistory()">Clear</button>
+    </div>
+    <canvas id="histChart"></canvas>
+    <div class="session-list">
+      <div class="session-row head"><span>Time</span><span>Duration</span><span>Blinks</span><span>Rate/min</span></div>
+      <div id="sessionRows"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const ctx2d = overlay.getContext('2d');
+
+let blinks=0, best=0, lastBlink=null, sessionStart=null, sessionRunning=false;
+let sessionTimer=null, fmCamera=null, faceMesh=null;
+let earHistory=[], blinkHistory=[], sessionLog=[];
+let blinkCooldown=false, prevEarAvg=1;
+const EAR_THRESH=0.22, EAR_RATIO=0.5;
+
+const LEFT_EYE=[362,385,387,263,373,380];
+const RIGHT_EYE=[33,160,158,133,153,144];
+
+function earFromPoints(pts,idxs){
+  const p=idxs.map(i=>pts[i]);
+  const vert1=dist(p[1],p[5]), vert2=dist(p[2],p[4]);
+  const horiz=dist(p[0],p[3]);
+  return (vert1+vert2)/(2*horiz);
+}
+function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)}
+
+function initFaceMesh(){
+  faceMesh=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+  faceMesh.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+  faceMesh.onResults(onResults);
+}
+
+function onResults(res){
+  const w=overlay.width=video.videoWidth||640;
+  const h=overlay.height=video.videoHeight||480;
+  ctx2d.clearRect(0,0,w,h);
+  if(!res.multiFaceLandmarks||!res.multiFaceLandmarks.length) return;
+  const lm=res.multiFaceLandmarks[0];
+  const pts=lm.map(p=>({x:p.x*w,y:p.y*h}));
+
+  const earL=earFromPoints(pts,LEFT_EYE);
+  const earR=earFromPoints(pts,RIGHT_EYE);
+  const earAvg=(earL+earR)/2;
+
+  document.getElementById('earL').style.width=Math.min(100,earL*300)+'%';
+  document.getElementById('earR').style.width=Math.min(100,earR*300)+'%';
+
+  if(document.getElementById('showMesh').checked){
+    drawMesh(ctx2d,pts,w,h);
+    drawEyeOutline(ctx2d,pts,LEFT_EYE,'rgba(29,158,117,0.9)');
+    drawEyeOutline(ctx2d,pts,RIGHT_EYE,'rgba(56,138,221,0.9)');
+  }
+
+  if(sessionRunning && earAvg<EAR_THRESH && prevEarAvg>=EAR_THRESH && !blinkCooldown){
+    registerBlink(true);
+    blinkCooldown=true;
+    setTimeout(()=>blinkCooldown=false,300);
+  }
+  prevEarAvg=earAvg;
+}
+
+function drawMesh(c,pts,w,h){
+  const OUTLINE=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+  c.beginPath();
+  OUTLINE.forEach((i,idx)=>{
+    const p=pts[i];
+    idx===0?c.moveTo(p.x,p.y):c.lineTo(p.x,p.y);
+  });
+  c.closePath();
+  c.strokeStyle='rgba(255,255,255,0.12)';
+  c.lineWidth=1;
+  c.stroke();
+}
+
+function drawEyeOutline(c,pts,idxs,color){
+  c.beginPath();
+  idxs.forEach((i,k)=>{
+    const p=pts[i];
+    k===0?c.moveTo(p.x,p.y):c.lineTo(p.x,p.y);
+  });
+  c.closePath();
+  c.strokeStyle=color;
+  c.lineWidth=2;
+  c.stroke();
+  c.fillStyle=color.replace('0.9','0.15');
+  c.fill();
+}
+
+async function initCamera(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+    video.srcObject=stream;
+    await new Promise(r=>video.onloadedmetadata=r);
+    document.getElementById('statusBadge').className='status-badge badge-ok';
+    document.getElementById('statusBadge').textContent='Camera on';
+    document.getElementById('btnCamera').classList.add('active');
+    initFaceMesh();
+    fmCamera=new Camera(video,{
+      onFrame:async()=>{ if(faceMesh) await faceMesh.send({image:video}); },
+      width:640,height:480
+    });
+    fmCamera.start();
+    playTone(440,0.05,'sine');
+  }catch(e){
+    document.getElementById('statusBadge').className='status-badge badge-warn';
+    document.getElementById('statusBadge').textContent='Camera blocked';
+    alert('Camera error: '+e.message);
+  }
+}
+
+function toggleCam(){
+  document.getElementById('camPanel').style.display=document.getElementById('showCam').checked?'block':'none';
+}
+
+function toggleSession(){
+  if(sessionRunning) stopSession();
+  else startSession();
+}
+
+function startSession(){
+  blinks=0; best=0; lastBlink=Date.now(); sessionStart=Date.now();
+  sessionRunning=true;
+  document.getElementById('mBlinks').textContent='0';
+  document.getElementById('mStreak').textContent='0.0';
+  document.getElementById('mBest').textContent='0.0';
+  document.getElementById('mRate').textContent='—';
+  document.getElementById('btnSession').innerHTML='<i class="ti ti-player-stop" aria-hidden="true"></i> Stop';
+  document.getElementById('btnSession').classList.add('active');
+  const total=parseInt(document.getElementById('duration').value);
+  document.getElementById('progTotal').textContent=fmtTime(total);
+  sessionTimer=setInterval(()=>{
+    const sec=Math.floor((Date.now()-sessionStart)/1000);
+    document.getElementById('progTime').textContent=fmtTime(sec);
+    document.getElementById('progBar').style.width=Math.min(100,sec/total*100)+'%';
+    const streak=((Date.now()-lastBlink)/1000).toFixed(1);
+    document.getElementById('mStreak').textContent=streak;
+    checkAlerts(parseFloat(streak),blinks,sec);
+    if(sec>=total) stopSession();
+  },200);
+}
+
+function stopSession(){
+  if(!sessionRunning) return;
+  sessionRunning=false;
+  clearInterval(sessionTimer);
+  document.getElementById('btnSession').innerHTML='<i class="ti ti-player-play" aria-hidden="true"></i> Start Session';
+  document.getElementById('btnSession').classList.remove('active');
+  document.getElementById('alertBox').style.display='none';
+  const duration=Math.floor((Date.now()-sessionStart)/1000);
+  const rate=duration>0?Math.round(blinks/(duration/60)*10)/10:0;
+  const now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  sessionLog.push({time:now,duration:fmtTime(duration),blinks,rate});
+  updateSessionList();
+  updateHistChart();
+  playTone(523,0.2,'sine');
+}
+
+function registerBlink(auto=false){
+  if(!sessionRunning) return;
+  const now=Date.now();
+  const gap=(now-lastBlink)/1000;
+  if(gap>best){ best=parseFloat(gap.toFixed(1)); document.getElementById('mBest').textContent=best.toFixed(1); }
+  lastBlink=now;
+  blinks++;
+  document.getElementById('mBlinks').textContent=blinks;
+  const sec=Math.max(1,Math.floor((now-sessionStart)/1000));
+  const rate=Math.round(blinks/(sec/60)*10)/10;
+  document.getElementById('mRate').textContent=rate.toFixed(1);
+  playTone(880,0.04,'sine');
+  flashOverlay();
+}
+
+function flashOverlay(){
+  overlay.style.boxShadow='inset 0 0 30px rgba(29,158,117,0.6)';
+  setTimeout(()=>overlay.style.boxShadow='',200);
+}
+
+function checkAlerts(streak,blinks,sec){
+  const box=document.getElementById('alertBox');
+  const msg=document.getElementById('alertMsg');
+  const rate=sec>5?blinks/(sec/60):null;
+  if(streak>8){
+    box.className='alert-box alert-slow';
+    msg.textContent=`No blink for ${streak}s — your eyes may be drying out. Blink now!`;
+    box.style.display='flex';
+  } else if(rate!==null && rate>30){
+    box.className='alert-box alert-fast';
+    msg.textContent=`Blink rate is high (${rate.toFixed(1)}/min). Try to slow down.`;
+    box.style.display='flex';
+  } else {
+    box.style.display='none';
+  }
+}
+
+function updateSessionList(){
+  const rows=document.getElementById('sessionRows');
+  rows.innerHTML=sessionLog.slice().reverse().map(s=>
+    `<div class="session-row"><span>${s.time}</span><span>${s.duration}</span><span>${s.blinks}</span><span>${s.rate}</span></div>`
+  ).join('');
+}
+
+let histChartInst=null;
+function updateHistChart(){
+  const labels=sessionLog.map(s=>s.time);
+  const rates=sessionLog.map(s=>s.rate);
+  const canvas=document.getElementById('histChart');
+  if(histChartInst) histChartInst.destroy();
+  histChartInst=new Chart(canvas,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Blinks/min',data:rates,backgroundColor:'rgba(29,158,117,0.6)',borderColor:'rgba(29,158,117,1)',borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},x:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+}
+
+function clearHistory(){
+  sessionLog=[];
+  document.getElementById('sessionRows').innerHTML='';
+  if(histChartInst){histChartInst.destroy();histChartInst=null;}
+}
+
+function fmtTime(sec){
+  return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+}
+
+function playTone(freq,dur,type){
+  try{
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(); const g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.15,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    o.start(); o.stop(ac.currentTime+dur);
+  }catch(e){}
+}
+
+document.getElementById('zoom').addEventListener('input',function(){
+  video.style.transform=`scale(${this.value})`;
+  document.getElementById('zoomVal').textContent=parseFloat(this.value).toFixed(1)+'×';
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key.toLowerCase()==='b') registerBlink(false);
+  if(e.key===' '){e.preventDefault(); toggleSession();}
+});
+
+function renderTarget(){
+  const area=document.getElementById('targetArea');
+  const t=document.getElementById('targetSel').value;
+  if(t==='flame'){
+    area.innerHTML=`<div style="font-size:220px;animation:flm .2s infinite alternate;user-select:none">🔥</div>`;
+  } else if(t==='dot'){
+    area.innerHTML=`<div style="width:180px;height:180px;border-radius:50%;background:#fff"></div>`;
+  } else if(t==='bull'){
+    area.innerHTML=`<div style="width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,#000 10%,#fff 11%,#fff 28%,#000 29%,#000 46%,#fff 47%,#fff 64%,#000 65%)"></div>`;
+  } else if(t==='pend'){
+    area.innerHTML=`<div style="font-size:90px;position:relative;animation:pnd 3s ease-in-out infinite;user-select:none">⚫</div>`;
+  }
+}
+
+const style=document.createElement('style');
+style.textContent=`@keyframes flm{from{transform:scale(1)}to{transform:scale(1.06)}}@keyframes pnd{0%{left:-160px}50%{left:160px}100%{left:-160px}}`;
+document.head.appendChild(style);
+
+renderTarget();
+</script>
