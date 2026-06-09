@@ -1,0 +1,47 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'><title>Eye Exercise Tracker Pro</title>
+<style>
+body{font-family:Arial;background:#111;color:#fff;text-align:center}
+.card{background:#1e1e1e;margin:10px;padding:15px;border-radius:10px}
+#targetArea{height:350px;display:flex;align-items:center;justify-content:center}
+.dot{background:#fff;border-radius:50%}
+.bullseye{border-radius:50%;background:radial-gradient(circle,black 10%,white 11%,white 25%,black 26%,black 40%,white 41%,white 55%,black 56%)}
+.flame{animation:flicker .2s infinite alternate}
+@keyframes flicker{from{transform:scale(1)}to{transform:scale(1.05)}}
+.pendulum{position:relative;animation:swing 4s infinite ease-in-out}
+@keyframes swing{0%{left:-180px}50%{left:180px}100%{left:-180px}}
+.progress{height:24px;background:#333}.bar{height:24px;width:0;background:linear-gradient(90deg,#00ff88,#ffd700)}
+</style></head><body>
+<h1>👁 Eye Exercise Tracker Pro</h1>
+<div class='card'>
+<select id='targetType' onchange='changeTarget()'>
+<option value='dot'>Large Dot</option>
+<option value='bullseye'>Concentric Circles</option>
+<option value='flame'>Candle Flame</option>
+<option value='pendulum'>Pendulum</option>
+</select>
+<input type='range' min='80' max='350' value='200' id='sizeSlider' oninput='changeTarget()'>
+</div>
+<div class='card'>
+<select id='duration'><option value='60'>1 Minute</option><option value='120'>2 Minutes</option><option value='300'>5 Minutes</option></select>
+<button onclick='startTimer()'>Start</button>
+<h2 id='time'>00:00</h2>
+<div class='progress'><div class='bar' id='bar'></div></div>
+</div>
+<div id='targetArea' class='card'></div>
+<script>
+function changeTarget(){
+let t=document.getElementById('targetType').value,s=document.getElementById('sizeSlider').value,a=document.getElementById('targetArea');
+if(t==='dot')a.innerHTML='<div class="dot" style="width:'+s+'px;height:'+s+'px"></div>';
+else if(t==='bullseye')a.innerHTML='<div class="bullseye" style="width:'+s+'px;height:'+s+'px"></div>';
+else if(t==='flame')a.innerHTML='<div class="flame" style="font-size:'+s+'px">🔥</div>';
+else a.innerHTML='<div class="pendulum" style="font-size:'+Math.max(80,s/2)+'px">⚫</div>';
+}
+let timer;
+function startTimer(){
+clearInterval(timer);let total=parseInt(document.getElementById('duration').value),start=Date.now();
+timer=setInterval(function(){let sec=Math.floor((Date.now()-start)/1000);
+document.getElementById('time').innerText=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+document.getElementById('bar').style.width=Math.min(100,(sec/total)*100)+'%';
+if(sec>=total){clearInterval(timer);alert('Exercise Complete');}},200);}
+changeTarget();
+</script></body></html>
